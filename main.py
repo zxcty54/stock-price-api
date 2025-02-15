@@ -1,7 +1,9 @@
 from flask import Flask, jsonify
+from flask_cors import CORS  # Import CORS module
 import yfinance as yf
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 @app.route('/')
 def home():
@@ -17,4 +19,4 @@ def get_stock_price(symbol):
         return jsonify({"error": "Invalid symbol or data unavailable"})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=10000)
