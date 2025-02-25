@@ -19,13 +19,30 @@ def get_stock_price(symbol):
         if history.empty:
             return jsonify({"error": "No data available for this symbol"}), 400
 
-        price = history["Close"].iloc[-1]  # Get latest closing price
+        price = history["Close"].iloc[-1]
         return jsonify({"symbol": symbol, "price": round(price, 2)})
 
     except Exception as e:
         print("Error fetching stock price:", e)
         return jsonify({"error": "Invalid symbol or data unavailable"}), 500
 
+# New API for Gainers & Losers
+@app.route('/gainers-losers')
+def get_gainers_losers():
+    try:
+        tickers = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS"]  # Example stocks
+        stock_data = {ticker: yf.Ticker(ticker).history(period="1d")['Close'].iloc[-1] for ticker in tickers}
+
+        sorted_stocks = sorted(stock_data.items(), key=lambda x: x[1], reverse=True)
+        top_gainers = sorted_stocks[:3]  # Top 3 gainers
+        top_losers = sorted_stocks[-3:]  # Bottom 3 losers
+
+        return jsonify({"top_gainers": top_gainers, "top_losers": top_losers})
+
+    except Exception as e:
+        print("Error fetching gainers/losers:", e)
+        return jsonify({"error": "Unable to fetch gainers/losers"}), 500
+
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))  # Render assigns a port dynamically
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
