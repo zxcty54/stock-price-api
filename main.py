@@ -6,65 +6,38 @@ import yfinance as yf
 app = Flask(__name__)
 CORS(app)
 
+# Top 5 companies from NIFTY 50 & BANK NIFTY
+nifty50_top5 = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS"]
+banknifty_top5 = ["HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS", "AXISBANK.NS", "KOTAKBANK.NS"]
+
 @app.route('/')
 def home():
     return "Stock Price API is Running!"
 
-@app.route('/get-price/<symbol>')
-def get_stock_price(symbol):
+@app.route('/nifty-bank-live')
+def get_nifty_bank_prices():
     try:
-        stock = yf.Ticker(symbol)
-        history = stock.history(period="1d")
+        def get_prices(stock_list):
+            stock_prices = {}
+            for ticker in stock_list:
+                stock = yf.Ticker(ticker)
+                history = stock.history(period="1d")  # Get today's price
+                
+                if history.empty:
+                    stock_prices[ticker] = "N/A"
+                else:
+                    stock_prices[ticker] = round(history["Close"].iloc[-1], 2)  # Get last closing price
 
-        if history.empty:
-            return jsonify({"error": "No data available for this symbol"}), 400
+            return stock_prices
 
-        price = history["Close"].iloc[-1]
-        return jsonify({"symbol": symbol, "price": round(price, 2)})
+        nifty_prices = get_prices(nifty50_top5)
+        banknifty_prices = get_prices(banknifty_top5)
+
+        return jsonify({"nifty50": nifty_prices, "banknifty": banknifty_prices})
 
     except Exception as e:
-        print("Error fetching stock price:", e)
-        return jsonify({"error": "Invalid symbol or data unavailable"}), 500
-
-@app.route('/gainers-losers')
-def get_gainers_losers():
-    try:
-        tickers = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS"]  # Example stocks
-        stock_data = {ticker: yf.Ticker(ticker).history(period="1d")['Close'].iloc[-1] for ticker in tickers}
-
-        sorted_stocks = sorted(stock_data.items(), key=lambda x: x[1], reverse=True)
-        top_gainers = sorted_stocks[:3]  # Top 3 gainers
-        top_losers = sorted_stocks[-3:]  # Bottom 3 losers
-
-        return jsonify({"top_gainers": top_gainers, "top_losers": top_losers})
-
-    except Exception as e:
-        print("Error fetching gainers/losers:", e)
-        return jsonify({"error": "Unable to fetch gainers/losers"}), 500
-
-# New API for Market Indices (Dow Jones, S&P 500, NASDAQ)
-@app.route('/market-indices')
-def get_market_indices():
-    try:
-        indices = {
-            "Dow Jones": "^DJI",
-            "S&P 500": "^GSPC",
-            "NASDAQ": "^IXIC"
-        }
-        
-        index_prices = {}
-        for name, symbol in indices.items():
-            stock = yf.Ticker(symbol)
-            history = stock.history(period="1d")
-
-            if not history.empty:
-                index_prices[name] = round(history["Close"].iloc[-1], 2)
-
-        return jsonify(index_prices)
-
-    except Exception as e:
-        print("Error fetching market indices:", e)
-        return jsonify({"error": "Unable to fetch market indices"}), 500
+        print("Error fetching stock prices:", e)
+        return jsonify({"error": "Unable to fetch stock prices"}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
