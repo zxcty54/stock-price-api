@@ -26,7 +26,6 @@ def get_stock_price(symbol):
         print("Error fetching stock price:", e)
         return jsonify({"error": "Invalid symbol or data unavailable"}), 500
 
-# New API for Gainers & Losers
 @app.route('/gainers-losers')
 def get_gainers_losers():
     try:
@@ -42,6 +41,30 @@ def get_gainers_losers():
     except Exception as e:
         print("Error fetching gainers/losers:", e)
         return jsonify({"error": "Unable to fetch gainers/losers"}), 500
+
+# New API for Market Indices (Dow Jones, S&P 500, NASDAQ)
+@app.route('/market-indices')
+def get_market_indices():
+    try:
+        indices = {
+            "Dow Jones": "^DJI",
+            "S&P 500": "^GSPC",
+            "NASDAQ": "^IXIC"
+        }
+        
+        index_prices = {}
+        for name, symbol in indices.items():
+            stock = yf.Ticker(symbol)
+            history = stock.history(period="1d")
+
+            if not history.empty:
+                index_prices[name] = round(history["Close"].iloc[-1], 2)
+
+        return jsonify(index_prices)
+
+    except Exception as e:
+        print("Error fetching market indices:", e)
+        return jsonify({"error": "Unable to fetch market indices"}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
