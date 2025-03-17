@@ -23,20 +23,20 @@ def get_nifty_bank_prices():
                 stock = yf.Ticker(ticker)
                 try:
                     live_price = stock.fast_info["last_price"]
-                    history = stock.history(period="1d")  # Get today's price data
-                    
-                    if not history.empty:
-                        opening_price = history["Open"].iloc[0]  # Get today's opening price
-                        change = ((live_price - opening_price) / opening_price) * 100  # % Change from Open
+                    prev_close = stock.fast_info["previous_close"]  # Yesterday’s Close Price
+
+                    if prev_close:  # Ensure previous close is available
+                        change = ((live_price - prev_close) / prev_close) * 100
                         stock_data[ticker] = {
                             "price": round(live_price, 2),
-                            "change": round(change, 2)
+                            "change": round(change, 2),
+                            "prevClose": round(prev_close, 2)
                         }
                     else:
-                        stock_data[ticker] = {"price": "N/A", "change": "N/A"}
-                
-                except:
-                    stock_data[ticker] = {"price": "N/A", "change": "N/A"}
+                        stock_data[ticker] = {"price": "N/A", "change": "N/A", "prevClose": "N/A"}
+
+                except Exception as e:
+                    stock_data[ticker] = {"price": "N/A", "change": "N/A", "prevClose": "N/A"}
 
             return stock_data
 
