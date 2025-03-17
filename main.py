@@ -18,22 +18,32 @@ def home():
 def get_nifty_bank_prices():
     try:
         def get_prices(stock_list):
-            stock_prices = {}
+            stock_data = {}
             for ticker in stock_list:
                 stock = yf.Ticker(ticker)
-                history = stock.history(period="1d")  # Get today's price
+                try:
+                    live_price = stock.fast_info["last_price"]
+                    history = stock.history(period="1d")  # Get today's price data
+                    
+                    if not history.empty:
+                        opening_price = history["Open"].iloc[0]  # Get today's opening price
+                        change = ((live_price - opening_price) / opening_price) * 100  # % Change from Open
+                        stock_data[ticker] = {
+                            "price": round(live_price, 2),
+                            "change": round(change, 2)
+                        }
+                    else:
+                        stock_data[ticker] = {"price": "N/A", "change": "N/A"}
                 
-                if history.empty:
-                    stock_prices[ticker] = "N/A"
-                else:
-                    stock_prices[ticker] = round(history["Close"].iloc[-1], 2)  # Get last closing price
+                except:
+                    stock_data[ticker] = {"price": "N/A", "change": "N/A"}
 
-            return stock_prices
+            return stock_data
 
-        nifty_prices = get_prices(nifty50_top5)
-        banknifty_prices = get_prices(banknifty_top5)
+        nifty_data = get_prices(nifty50_top5)
+        banknifty_data = get_prices(banknifty_top5)
 
-        return jsonify({"nifty50": nifty_prices, "banknifty": banknifty_prices})
+        return jsonify({"nifty50": nifty_data, "banknifty": banknifty_data})
 
     except Exception as e:
         print("Error fetching stock prices:", e)
